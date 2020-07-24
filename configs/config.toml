@@ -1,0 +1,15 @@
+
+# Postgresql connection string
+databaseURL = ""
+
+# Sync interval with Lines Provider in seconds
+updateByProvider_baseball = 5
+updateByProvider_football = 5
+updateByProvider_soccer  = 5
+
+# Servers ip
+HTTPserver_ip = "127.0.0.1"
+GRPCserver_ip = "127.0.0.1"
+
+# trace / debug / info / warn / error / fatal / panic
+log_level = "debug"

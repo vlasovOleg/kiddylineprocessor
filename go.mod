@@ -5,4 +5,6 @@ go 1.14
 require (
 	github.com/lib/pq v1.7.1
 	github.com/stretchr/testify v1.6.1
+	github.com/sirupsen/logrus v1.6.0
+	github.com/BurntSushi/toml v0.3.1
 )
