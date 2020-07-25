@@ -2,10 +2,16 @@
 # Postgresql connection string
 databaseURL = ""
 
+# http://domen:port
+linesProvider_address = ""
+
+# http requests timeout
+linesProvider_requestsTimeout = 15
+
 # Sync interval with Lines Provider in seconds
-updateByProvider_baseball = 5
-updateByProvider_football = 5
-updateByProvider_soccer  = 5
+linesProvider_baseball = 5
+linesProvider_football = 5
+linesProvider_soccer  = 5
 
 # Servers ip
 HTTPserver_ip = "127.0.0.1"

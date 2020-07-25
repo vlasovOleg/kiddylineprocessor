@@ -3,6 +3,8 @@ package kiddylineprocessor
 import (
 	"database/sql"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vlasovoleg/kiddyLineProcessor/internal/store"
@@ -11,15 +13,17 @@ import (
 
 // Kiddylineprocessor ...
 type Kiddylineprocessor struct {
-	config *Config
-	store  store.Store
-	loger  *logrus.Logger
+	config     *Config
+	store      store.Store
+	httpClient *http.Client
+	loger      *logrus.Logger
 }
 
 // New kiddylineprocessor
 func New(config *Config) *Kiddylineprocessor {
 	kp := &Kiddylineprocessor{}
 	kp.config = config
+	kp.config.LinesProviderAddress += "/api/v1/lines/"
 
 	loger := logrus.New()
 	loger.SetFormatter(
@@ -44,5 +48,18 @@ func New(config *Config) *Kiddylineprocessor {
 	}
 	kp.store = sqlstore.New(db)
 
+	kp.httpClient = &http.Client{
+		Timeout: config.LinesProviderRequestsTimeout * time.Second,
+	}
+
 	return kp
+}
+
+// Start ...
+func (kp Kiddylineprocessor) Start() {
+	kp.loger.Debug("Kiddylineprocessor : Start")
+
+	go kp.updaterByLineProviderBaseball()
+	go kp.updaterByLineProviderFootball()
+	go kp.updaterByLineProviderSoccer()
 }

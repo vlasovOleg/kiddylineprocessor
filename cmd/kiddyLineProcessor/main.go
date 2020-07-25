@@ -24,5 +24,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = kiddylineprocessor.New(&config)
+	klp := kiddylineprocessor.New(&config)
+	klp.Start()
+	for {
+	}
 }
