@@ -56,15 +56,18 @@ func (kp *Kiddylineprocessor) updaterByLineProviderBaseball() {
 		time.Sleep(kp.config.UpdateByProviderBaseball * time.Second)
 		c, err := kp.updaterByLineProvider("baseball")
 		if err != nil {
+			kp.errorBaseball = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : updaterByProvider : ", err.Error())
 			continue
 		}
 		kp.store.BaseballRepository().UpdateCoefficient(c)
 		if err != nil {
+			kp.errorBaseball = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : UpdateCoefficient : ", err.Error())
 			continue
 		}
 		kp.loger.Debug("Kiddylineprocessor : updaterByProviderBaseball : new coefficient : ", c)
+		kp.errorBaseball = ""
 	}
 }
 
@@ -73,14 +76,17 @@ func (kp *Kiddylineprocessor) updaterByLineProviderFootball() {
 		time.Sleep(kp.config.UpdateByProviderFootball * time.Second)
 		c, err := kp.updaterByLineProvider("football")
 		if err != nil {
+			kp.errorFootball = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderFootball : updaterByProvider : ", err.Error())
 			continue
 		}
 		err = kp.store.FootballRepository().UpdateCoefficient(c)
 		if err != nil {
+			kp.errorFootball = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderFootball : UpdateCoefficient : ", err.Error())
 			continue
 		}
+		kp.errorFootball = ""
 		kp.loger.Debug("Kiddylineprocessor : updaterByProviderFootball : new coefficient : ", c)
 	}
 }
@@ -90,14 +96,17 @@ func (kp *Kiddylineprocessor) updaterByLineProviderSoccer() {
 		time.Sleep(kp.config.UpdateByProviderSoccer * time.Second)
 		c, err := kp.updaterByLineProvider("soccer")
 		if err != nil {
+			kp.errorSoccer = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderSoccer : updaterByProvider : ", err.Error())
 			continue
 		}
 		err = kp.store.SoccerRepository().UpdateCoefficient(c)
 		if err != nil {
+			kp.errorSoccer = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderSoccer : UpdateCoefficient : ", err.Error())
 			continue
 		}
+		kp.errorSoccer = ""
 		kp.loger.Debug("Kiddylineprocessor : updaterByProviderSoccer : new coefficient : ", c)
 	}
 }

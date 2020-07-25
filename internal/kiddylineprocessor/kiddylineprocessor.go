@@ -13,10 +13,14 @@ import (
 
 // Kiddylineprocessor ...
 type Kiddylineprocessor struct {
-	config     *Config
-	store      store.Store
-	httpClient *http.Client
-	loger      *logrus.Logger
+	config        *Config
+	store         store.Store
+	httpClient    *http.Client
+	loger         *logrus.Logger
+	ready         bool
+	errorBaseball string
+	errorFootball string
+	errorSoccer   string
 }
 
 // New kiddylineprocessor
@@ -52,6 +56,9 @@ func New(config *Config) *Kiddylineprocessor {
 		Timeout: config.LinesProviderRequestsTimeout * time.Second,
 	}
 
+	kp.errorBaseball = "waiting sync"
+	kp.errorFootball = "waiting sync"
+	kp.errorSoccer = "waiting sync"
 	return kp
 }
 
@@ -62,4 +69,6 @@ func (kp Kiddylineprocessor) Start() {
 	go kp.updaterByLineProviderBaseball()
 	go kp.updaterByLineProviderFootball()
 	go kp.updaterByLineProviderSoccer()
+
+	go kp.httpAPIServer()
 }

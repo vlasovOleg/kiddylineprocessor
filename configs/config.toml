@@ -13,8 +13,12 @@ linesProvider_baseball = 5
 linesProvider_football = 5
 linesProvider_soccer  = 5
 
-# Servers ip
-HTTPserver_ip = "127.0.0.1"
+# http api server
+# ip:port. For example 127.0.0.1:8001
+HTTPserver_address = ""
+HTTPserver_readTimeout = 5
+HTTPserver_writeTimeout = 5
+
 GRPCserver_ip = "127.0.0.1"
 
 # trace / debug / info / warn / error / fatal / panic
