@@ -13,6 +13,6 @@ type Config struct {
 	HTTPserverAddress            string        `toml:"HTTPserver_address"`
 	HTTPserverReadTimeout        time.Duration `toml:"HTTPserver_readTimeout"`
 	HTTPserverWriteTimeout       time.Duration `toml:"HTTPserver_writeTimeout"`
-	GRPCserverIP                 string        `toml:"GRPCserver_ip"`
+	GRPCserverAddress            string        `toml:"GRPCserver_address"`
 	LogLevel                     string        `toml:"log_level"`
 }

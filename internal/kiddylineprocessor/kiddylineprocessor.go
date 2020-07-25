@@ -71,4 +71,5 @@ func (kp Kiddylineprocessor) Start() {
 	go kp.updaterByLineProviderSoccer()
 
 	go kp.httpAPIServer()
+	go kp.NewGRPS(&kp.store, kp.loger)
 }

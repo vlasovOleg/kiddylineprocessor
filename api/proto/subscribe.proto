@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package api;
+
+service Processor {
+    rpc SubscribeOnSportLines (stream Sports) returns (stream Coefficients);
+}
+
+message Sports{
+    repeated string Sports = 1;
+    int32 time = 2;
+}
+
+message Coefficients{
+    map <string, float>  Coefficients= 1;
+}
