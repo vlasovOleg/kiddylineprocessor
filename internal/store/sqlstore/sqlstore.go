@@ -25,6 +25,11 @@ func New(db *sql.DB) *Store {
 	return s
 }
 
+// PindDB - check db connection
+func (s *Store) PindDB() error {
+	return s.db.Ping()
+}
+
 // BaseballRepository ...
 func (s *Store) BaseballRepository() store.BaseballRepository {
 	return s.baseballRepository
