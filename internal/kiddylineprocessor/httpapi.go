@@ -29,7 +29,7 @@ func (kp *Kiddylineprocessor) httpHandler() http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		if len(kp.errorBaseball) != 0 || len(kp.errorFootball) != 0 || len(kp.errorSoccer) != 0 {
+		if kp.errorBaseball != "" || kp.errorFootball != "" || kp.errorSoccer != "" {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

@@ -7,15 +7,15 @@ import (
 	"testing"
 )
 
-// TestDB ...
-func TestDB(t *testing.T) (*sql.DB, func(...string)) {
+// TestDB make connection to database to for tests.
+// Use retuned func to TRUNCATE CASCADE
+func TestDB(t *testing.T) (db *sql.DB, truncate func(...string)) {
 	t.Helper()
 	databaseURL := "host=localhost dbname=kiddylineprocessor_test sslmode=disable"
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		t.Fatal(err)
 	}
-	db.Ping()
 
 	return db, func(tables ...string) {
 		if len(tables) > 0 {

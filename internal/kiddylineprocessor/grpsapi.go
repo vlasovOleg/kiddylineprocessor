@@ -17,36 +17,39 @@ import (
 	"google.golang.org/grpc"
 )
 
-// GRPSServer ...
-type GRPSServer struct {
+// GRPCServer ...
+type gRPCServer struct {
 	store *store.Store
 	loger *logrus.Logger
 }
 
-// NewGRPS ..
-func (kp *Kiddylineprocessor) NewGRPS(store *store.Store, loger *logrus.Logger) {
-	kp.loger.Trace("Kiddylineprocessor : NewGRPS...")
+// NewGRPC ..
+func (kp *Kiddylineprocessor) NewGRPC(store *store.Store, loger *logrus.Logger) {
+	kp.loger.Trace("Kiddylineprocessor : NewGRPC...")
 	lis, err := net.Listen("tcp", kp.config.GRPCserverAddress)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
-	g := &GRPSServer{
+	g := &gRPCServer{
 		store: store,
 		loger: loger,
 	}
 	api.RegisterProcessorServer(grpcServer, g)
 
-	grpcServer.Serve(lis)
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		kp.loger.Error("Kiddylineprocessor : NewGRPC : grpcServer.Serve : ", err)
+	}
 }
 
-// SubscribeOnSportLines ...
-func (s *GRPSServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSportLinesServer) error {
+// SubscribeOnSportLines grpc method
+func (s *gRPCServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSportLinesServer) error {
 	sportNames := []func(*api.Coefficients){}
 	duration := int32(0)
 	delta := false
 
-	go s.subscribeOnSportLinesSender(&stream, &sportNames, &duration, &delta)
+	go s.subscribeOnSportLinesSender(stream, &sportNames, &duration, &delta)
 
 	for {
 		data, err := stream.Recv()
@@ -70,7 +73,8 @@ func (s *GRPSServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSport
 	}
 }
 
-func (s *GRPSServer) subscribeOnSportLinesSender(stream *api.Processor_SubscribeOnSportLinesServer, sports *[]func(*api.Coefficients), t *int32, delta *bool) {
+// grpc stream for send - func`s for getting info - time for delay - send delta
+func (s *gRPCServer) subscribeOnSportLinesSender(stream api.Processor_SubscribeOnSportLinesServer, sports *[]func(*api.Coefficients), t *int32, delta *bool) {
 	firstCoefficients := make(map[string]float32)
 
 	for {
@@ -82,7 +86,6 @@ func (s *GRPSServer) subscribeOnSportLinesSender(stream *api.Processor_Subscribe
 		for i := 0; i < len(*sports); i++ {
 			(*sports)[i](&coefficients)
 		}
-		s.loger.Trace("delta :", delta, *delta, " coefficients.Coefficients : ", coefficients.Coefficients, " firstCoefficients :", firstCoefficients)
 		if *delta {
 			for s, c := range firstCoefficients {
 				coefficients.Coefficients[s] -= c
@@ -95,31 +98,34 @@ func (s *GRPSServer) subscribeOnSportLinesSender(stream *api.Processor_Subscribe
 			}
 			*delta = true
 		}
-		(*stream).Send(&coefficients)
+		err := stream.Send(&coefficients)
+		if err != nil {
+			s.loger.Error("GRPCServer : subscribeOnSportLinesSender : stream.Send : ", err)
+		}
 		time.Sleep(time.Second * time.Duration(*t))
 	}
 }
 
-func (s *GRPSServer) getBaseball(c *api.Coefficients) {
+func (s *gRPCServer) getBaseball(c *api.Coefficients) {
 	dbc, err := (*s.store).BaseballRepository().GetCoefficient()
 	if err != nil {
-		s.loger.Error("kiddylineprocessor : gRPS API : getBaseball : BaseballRepository.GetCoefficient : " + err.Error())
+		s.loger.Error("kiddylineprocessor : gRPC API : getBaseball : BaseballRepository.GetCoefficient : " + err.Error())
 	}
 	c.Coefficients["baseball"] = dbc
 }
 
-func (s *GRPSServer) getFootball(c *api.Coefficients) {
+func (s *gRPCServer) getFootball(c *api.Coefficients) {
 	dbc, err := (*s.store).FootballRepository().GetCoefficient()
 	if err != nil {
-		s.loger.Error("kiddylineprocessor : gRPS API : getFootball : FootballRepository.GetCoefficient : " + err.Error())
+		s.loger.Error("kiddylineprocessor : gRPC API : getFootball : FootballRepository.GetCoefficient : " + err.Error())
 	}
 	c.Coefficients["football"] = dbc
 }
 
-func (s *GRPSServer) getSoccer(c *api.Coefficients) {
+func (s *gRPCServer) getSoccer(c *api.Coefficients) {
 	dbc, err := (*s.store).SoccerRepository().GetCoefficient()
 	if err != nil {
-		s.loger.Error("kiddylineprocessor : gRPS API : getSoccer : SoccerRepository.GetCoefficient : " + err.Error())
+		s.loger.Error("kiddylineprocessor : gRPC API : getSoccer : SoccerRepository.GetCoefficient : " + err.Error())
 	}
 	c.Coefficients["soccer"] = dbc
 }

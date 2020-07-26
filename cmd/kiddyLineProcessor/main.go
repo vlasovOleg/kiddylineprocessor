@@ -12,11 +12,8 @@ var (
 	configFile string
 )
 
-func init() {
-	flag.StringVar(&configFile, "config", "configs/config.toml", "path to configs folder")
-}
-
 func main() {
+	flag.StringVar(&configFile, "config", "configs/config.toml", "path to configs folder")
 	flag.Parse()
 
 	config := kiddylineprocessor.Config{}
@@ -26,6 +23,4 @@ func main() {
 
 	klp := kiddylineprocessor.New(&config)
 	klp.Start()
-	for {
-	}
 }

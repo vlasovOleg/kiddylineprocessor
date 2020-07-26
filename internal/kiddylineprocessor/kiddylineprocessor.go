@@ -11,13 +11,12 @@ import (
 	"github.com/vlasovoleg/kiddyLineProcessor/internal/store/sqlstore"
 )
 
-// Kiddylineprocessor ...
+// Kiddylineprocessor main struct
 type Kiddylineprocessor struct {
 	config        *Config
 	store         store.Store
 	httpClient    *http.Client
 	loger         *logrus.Logger
-	ready         bool
 	errorBaseball string
 	errorFootball string
 	errorSoccer   string
@@ -62,8 +61,9 @@ func New(config *Config) *Kiddylineprocessor {
 	return kp
 }
 
-// Start ...
-func (kp Kiddylineprocessor) Start() {
+// Start updater by line provider for baseball, football, soccer.
+// Start http api and grpc
+func (kp *Kiddylineprocessor) Start() {
 	kp.loger.Debug("Kiddylineprocessor : Start")
 
 	go kp.updaterByLineProviderBaseball()
@@ -71,5 +71,5 @@ func (kp Kiddylineprocessor) Start() {
 	go kp.updaterByLineProviderSoccer()
 
 	go kp.httpAPIServer()
-	go kp.NewGRPS(&kp.store, kp.loger)
+	kp.NewGRPC(&kp.store, kp.loger)
 }

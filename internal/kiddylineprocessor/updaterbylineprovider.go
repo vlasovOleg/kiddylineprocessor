@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -22,8 +23,9 @@ func (kp *Kiddylineprocessor) updaterByLineProvider(sport string) (float32, erro
 	if err != nil {
 		return 0, err
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		responseText, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return 0, err
@@ -60,7 +62,7 @@ func (kp *Kiddylineprocessor) updaterByLineProviderBaseball() {
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : updaterByProvider : ", err.Error())
 			continue
 		}
-		kp.store.BaseballRepository().UpdateCoefficient(c)
+		err = kp.store.BaseballRepository().UpdateCoefficient(c)
 		if err != nil {
 			kp.errorBaseball = err.Error()
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : UpdateCoefficient : ", err.Error())
