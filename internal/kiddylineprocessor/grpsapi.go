@@ -7,6 +7,7 @@ package kiddylineprocessor
 
 import (
 	"log"
+	"math"
 	"net"
 	"time"
 
@@ -43,8 +44,9 @@ func (kp *Kiddylineprocessor) NewGRPS(store *store.Store, loger *logrus.Logger) 
 func (s *GRPSServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSportLinesServer) error {
 	sportNames := []func(*api.Coefficients){}
 	duration := int32(0)
+	delta := false
 
-	go s.subscribeOnSportLinesSender(&stream, &sportNames, &duration)
+	go s.subscribeOnSportLinesSender(&stream, &sportNames, &duration, &delta)
 
 	for {
 		data, err := stream.Recv()
@@ -63,20 +65,37 @@ func (s *GRPSServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSport
 				sportNames = append(sportNames, s.getSoccer)
 			}
 		}
+		delta = false
 		duration = data.Time
 	}
 }
 
-func (s *GRPSServer) subscribeOnSportLinesSender(stream *api.Processor_SubscribeOnSportLinesServer, sports *[]func(*api.Coefficients), t *int32) {
+func (s *GRPSServer) subscribeOnSportLinesSender(stream *api.Processor_SubscribeOnSportLinesServer, sports *[]func(*api.Coefficients), t *int32, delta *bool) {
+	firstCoefficients := make(map[string]float32)
+
 	for {
-		c := api.Coefficients{}
-		c.Coefficients = make(map[string]float32)
-		if len(*sports) != 0 {
-			for i := 0; i < len(*sports); i++ {
-				(*sports)[i](&c)
-			}
-			(*stream).Send(&c)
+		coefficients := api.Coefficients{}
+		coefficients.Coefficients = make(map[string]float32)
+		if len(*sports) == 0 {
+			continue
 		}
+		for i := 0; i < len(*sports); i++ {
+			(*sports)[i](&coefficients)
+		}
+		s.loger.Trace("delta :", delta, *delta, " coefficients.Coefficients : ", coefficients.Coefficients, " firstCoefficients :", firstCoefficients)
+		if *delta {
+			for s, c := range firstCoefficients {
+				coefficients.Coefficients[s] -= c
+				coefficients.Coefficients[s] = float32(math.Ceil(float64(coefficients.Coefficients[s])*1000) / 1000)
+			}
+		} else {
+			firstCoefficients = make(map[string]float32)
+			for s, c := range coefficients.Coefficients {
+				firstCoefficients[s] = c
+			}
+			*delta = true
+		}
+		(*stream).Send(&coefficients)
 		time.Sleep(time.Second * time.Duration(*t))
 	}
 }
