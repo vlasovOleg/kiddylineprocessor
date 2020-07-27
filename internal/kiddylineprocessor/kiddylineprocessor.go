@@ -46,9 +46,6 @@ func New(config *Config) *Kiddylineprocessor {
 	if err != nil {
 		loger.Fatal(err)
 	}
-	if err := db.Ping(); err != nil {
-		loger.Panic(err)
-	}
 	kp.store = sqlstore.New(db)
 
 	kp.httpClient = &http.Client{

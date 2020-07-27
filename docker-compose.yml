@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+
+  linesprovider:
+    container_name: linesprovider
+    restart: always
+    image: antonboom/lines-provider
+    networks:
+      - lines
+
+  postgresdb:
+    container_name: postgresdb
+    restart: always
+    image: postgres:latest
+    environment:
+        - POSTGRES_USER=klpuser
+        - POSTGRES_PASSWORD=klppassword_example
+        - POSTGRES_DB=klpdb_example
+        - DATABASE_HOST=localhost
+    networks:
+        - lines
+    volumes:
+        - ./migrations/up/:/docker-entrypoint-initdb.d/
+
+  kiddylineprocessor:
+    container_name: kiddylineprocessor
+    restart: always
+    build: .
+    ports: 
+      - '8080:8080'
+      - '8081:8081'
+    expose: 
+      - '8080'
+      - '8081'
+    command: /app/klp
+    depends_on:
+      - postgresdb
+    networks:
+     - lines
+
+networks:
+  lines:
+    driver: bridge
+    
