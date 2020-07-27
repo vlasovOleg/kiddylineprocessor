@@ -68,7 +68,7 @@ func (kp *Kiddylineprocessor) updaterByLineProviderBaseball() {
 			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : UpdateCoefficient : ", err.Error())
 			continue
 		}
-		kp.loger.Debug("Kiddylineprocessor : updaterByProviderBaseball : new coefficient : ", c)
+		kp.loger.Trace("Kiddylineprocessor : updaterByProviderBaseball : new coefficient : ", c)
 		kp.errorBaseball = ""
 	}
 }
@@ -89,7 +89,7 @@ func (kp *Kiddylineprocessor) updaterByLineProviderFootball() {
 			continue
 		}
 		kp.errorFootball = ""
-		kp.loger.Debug("Kiddylineprocessor : updaterByProviderFootball : new coefficient : ", c)
+		kp.loger.Trace("Kiddylineprocessor : updaterByProviderFootball : new coefficient : ", c)
 	}
 }
 

@@ -18,7 +18,7 @@ func main() {
 
 	config := kiddylineprocessor.Config{}
 	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 
 	klp := kiddylineprocessor.New(&config)

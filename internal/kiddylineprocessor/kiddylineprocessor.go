@@ -44,7 +44,7 @@ func New(config *Config) *Kiddylineprocessor {
 
 	db, err := sql.Open("postgres", config.DatabaseURL)
 	if err != nil {
-		loger.Fatal(err)
+		loger.Panic("kiddylineprocessor : New : sql.Open : ", err)
 	}
 	kp.store = sqlstore.New(db)
 

@@ -19,12 +19,13 @@ func (kp *Kiddylineprocessor) httpAPIServer() {
 
 	err := server.ListenAndServe()
 	if err != nil {
-		kp.loger.Fatal("httpAPIServer : ListenAndServe : ", err)
+		kp.loger.Panic("httpAPIServer : ListenAndServe : ", err)
 	}
 }
 
 func (kp *Kiddylineprocessor) httpHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		kp.loger.Trace("Kiddylineprocessor : httpHandler ready")
 		if err := kp.store.PindDB(); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return

@@ -6,7 +6,6 @@
 package kiddylineprocessor
 
 import (
-	"log"
 	"math"
 	"net"
 	"time"
@@ -28,7 +27,7 @@ func (kp *Kiddylineprocessor) NewGRPC(store *store.Store, loger *logrus.Logger) 
 	kp.loger.Trace("Kiddylineprocessor : NewGRPC...")
 	lis, err := net.Listen("tcp", kp.config.GRPCserverAddress)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		kp.loger.Panic("Kiddylineprocessor : gRPC : failed to listen : ", err)
 	}
 	grpcServer := grpc.NewServer()
 	g := &gRPCServer{
@@ -56,6 +55,7 @@ func (s *gRPCServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSport
 		if err != nil {
 			return err
 		}
+		s.loger.Debug("SubscribeOnSportLines : gRPC SubscribeOnSportLines : sports:", data.Sports, "time:", data.Time)
 		sportNames = []func(*api.Coefficients){}
 		for _, sports := range data.Sports {
 			if sports == "baseball" {
