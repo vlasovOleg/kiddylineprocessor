@@ -25,7 +25,7 @@ type gRPCServer struct {
 // NewGRPC ..
 func (kp *Kiddylineprocessor) NewGRPC(store *store.Store, loger *logrus.Logger) {
 	kp.loger.Trace("Kiddylineprocessor : NewGRPC...")
-	lis, err := net.Listen("tcp", kp.config.GRPCserverAddress)
+	lis, err := net.Listen("tcp", kp.config.GRPC.Address)
 	if err != nil {
 		kp.loger.Panic("Kiddylineprocessor : gRPC : failed to listen : ", err)
 	}

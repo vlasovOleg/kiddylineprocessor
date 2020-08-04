@@ -19,7 +19,7 @@ func (kp *Kiddylineprocessor) updaterByLineProvider(sport string) (float32, erro
 		} `json:"lines"`
 	}{}
 
-	resp, err := kp.httpClient.Get(kp.config.LinesProviderAddress + sport)
+	resp, err := kp.httpClient.Get(kp.config.LinesProvider.Address + sport)
 	if err != nil {
 		return 0, err
 	}
@@ -55,7 +55,7 @@ func (kp *Kiddylineprocessor) updaterByLineProvider(sport string) (float32, erro
 
 func (kp *Kiddylineprocessor) updaterByLineProviderBaseball() {
 	for {
-		time.Sleep(kp.config.UpdateByProviderBaseball * time.Second)
+		time.Sleep(kp.config.LinesProvider.SyncIntervalBaseball)
 		c, err := kp.updaterByLineProvider("baseball")
 		if err != nil {
 			kp.errorBaseball = err.Error()
@@ -75,7 +75,7 @@ func (kp *Kiddylineprocessor) updaterByLineProviderBaseball() {
 
 func (kp *Kiddylineprocessor) updaterByLineProviderFootball() {
 	for {
-		time.Sleep(kp.config.UpdateByProviderFootball * time.Second)
+		time.Sleep(kp.config.LinesProvider.SyncIntervalFootball)
 		c, err := kp.updaterByLineProvider("football")
 		if err != nil {
 			kp.errorFootball = err.Error()
@@ -95,7 +95,7 @@ func (kp *Kiddylineprocessor) updaterByLineProviderFootball() {
 
 func (kp *Kiddylineprocessor) updaterByLineProviderSoccer() {
 	for {
-		time.Sleep(kp.config.UpdateByProviderSoccer * time.Second)
+		time.Sleep(kp.config.LinesProvider.SyncIntervalSoccer)
 		c, err := kp.updaterByLineProvider("soccer")
 		if err != nil {
 			kp.errorSoccer = err.Error()

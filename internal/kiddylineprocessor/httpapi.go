@@ -2,7 +2,6 @@ package kiddylineprocessor
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -11,10 +10,10 @@ func (kp *Kiddylineprocessor) httpAPIServer() {
 	router := mux.NewRouter()
 	router.HandleFunc("/ready", kp.httpHandler()).Methods("GET")
 	server := http.Server{
-		Addr:         kp.config.HTTPserverAddress,
+		Addr:         kp.config.HTTPAPI.Address,
 		Handler:      router,
-		ReadTimeout:  kp.config.HTTPserverReadTimeout * time.Second,
-		WriteTimeout: kp.config.HTTPserverWriteTimeout * time.Second,
+		ReadTimeout:  kp.config.HTTPAPI.ReadTimeout,
+		WriteTimeout: kp.config.HTTPAPI.WriteTimeout,
 	}
 
 	err := server.ListenAndServe()

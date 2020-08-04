@@ -1,26 +1,19 @@
-
 # Postgresql connection string
 databaseURL = "user=klpuser password=klppassword_example dbname=klpdb_example host=postgresdb port=5432 sslmode=disable"
 
-# http://domen:port
-linesProvider_address = "http://linesprovider:8000"
-
-# http requests timeout
-linesProvider_requestsTimeout = 15
-
-# Sync interval with Lines Provider in seconds
-linesProvider_baseball = 5
-linesProvider_football = 5
-linesProvider_soccer  = 5
-
-# http api server
-# ip:port. For example 127.0.0.1:8001
-HTTPserver_address = "0.0.0.0:8080"
-HTTPserver_readTimeout = 5
-HTTPserver_writeTimeout = 5
-
-# ip:port. For example 127.0.0.1:8001
-GRPCserver_address = "0.0.0.0:8081"
-
 # trace / debug / info /  error / panic
 log_level = "trace"
+
+# All intervals and timeouts are set in seconds
+[linesProvider]
+    address = "http://linesprovider:8000"
+    requestsTimeout = 15
+    syncInterval_baseball = 5
+    syncInterval_football = 5
+    syncInterval_soccer  = 5
+[HTTPAPI]
+    address = "0.0.0.0:8080"
+    readTimeout = 5
+    writeTimeout = 5
+[gRPC]
+    address = "0.0.0.0:8081"

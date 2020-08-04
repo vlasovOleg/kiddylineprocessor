@@ -4,15 +4,24 @@ import "time"
 
 // Config for kiddylineprocessor
 type Config struct {
-	DatabaseURL                  string        `toml:"databaseURL"`
-	LinesProviderAddress         string        `toml:"linesProvider_address"`
-	LinesProviderRequestsTimeout time.Duration `toml:"linesProvider_requestsTimeout"`
-	UpdateByProviderBaseball     time.Duration `toml:"linesProvider_baseball"`
-	UpdateByProviderFootball     time.Duration `toml:"linesProvider_football"`
-	UpdateByProviderSoccer       time.Duration `toml:"linesProvider_soccer"`
-	HTTPserverAddress            string        `toml:"HTTPserver_address"`
-	HTTPserverReadTimeout        time.Duration `toml:"HTTPserver_readTimeout"`
-	HTTPserverWriteTimeout       time.Duration `toml:"HTTPserver_writeTimeout"`
-	GRPCserverAddress            string        `toml:"GRPCserver_address"`
-	LogLevel                     string        `toml:"log_level"`
+	DatabaseURL string `toml:"databaseURL"`
+	LogLevel    string `toml:"log_level"`
+
+	LinesProvider struct {
+		Address              string        `toml:"address"`
+		RequestsTimeout      time.Duration `toml:"requestsTimeout"`
+		SyncIntervalBaseball time.Duration `toml:"syncInterval_baseball"`
+		SyncIntervalFootball time.Duration `toml:"syncInterval_Football"`
+		SyncIntervalSoccer   time.Duration `toml:"syncInterval_Soccer"`
+	} `toml:"linesProvider"`
+
+	HTTPAPI struct {
+		Address      string        `toml:"address"`
+		ReadTimeout  time.Duration `toml:"readTimeout"`
+		WriteTimeout time.Duration `toml:"writeTimeout"`
+	} `toml:"HTTPAPI"`
+
+	GRPC struct {
+		Address string `toml:"address"`
+	} `toml:"gRPC"`
 }

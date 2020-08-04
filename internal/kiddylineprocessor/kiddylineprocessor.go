@@ -2,9 +2,9 @@ package kiddylineprocessor
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vlasovoleg/kiddyLineProcessor/internal/store"
@@ -24,9 +24,10 @@ type Kiddylineprocessor struct {
 
 // New kiddylineprocessor
 func New(config *Config) *Kiddylineprocessor {
+	fmt.Printf("%+v\n", config)
 	kp := &Kiddylineprocessor{}
 	kp.config = config
-	kp.config.LinesProviderAddress += "/api/v1/lines/"
+	kp.config.LinesProvider.Address += "/api/v1/lines/"
 
 	loger := logrus.New()
 	loger.SetFormatter(
@@ -49,7 +50,7 @@ func New(config *Config) *Kiddylineprocessor {
 	kp.store = sqlstore.New(db)
 
 	kp.httpClient = &http.Client{
-		Timeout: config.LinesProviderRequestsTimeout * time.Second,
+		Timeout: config.LinesProvider.RequestsTimeout,
 	}
 
 	kp.errorBaseball = "waiting sync"
