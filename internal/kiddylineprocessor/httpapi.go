@@ -26,7 +26,9 @@ func (kp *Kiddylineprocessor) httpAPIServer(ctx context.Context, wg *sync.WaitGr
 	}()
 
 	<-ctx.Done()
-	server.Shutdown(context.TODO())
+	if err := server.Shutdown(context.TODO()); err != nil {
+		kp.loger.Error("httpAPIServer : Shutdown : ", err.Error())
+	}
 	wg.Done()
 }
 

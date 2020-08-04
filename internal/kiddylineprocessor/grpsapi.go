@@ -20,11 +20,11 @@ import (
 
 // GRPCServer ...
 type gRPCServer struct {
-	store *store.Store
+	store store.Store
 	loger *logrus.Logger
 }
 
-func (kp *Kiddylineprocessor) runGRPC(ctx context.Context, wg *sync.WaitGroup, store *store.Store, loger *logrus.Logger) {
+func (kp *Kiddylineprocessor) runGRPC(ctx context.Context, wg *sync.WaitGroup, data store.Store, loger *logrus.Logger) {
 	kp.loger.Trace("Kiddylineprocessor : runGRPC")
 	lis, err := net.Listen("tcp", kp.config.GRPC.Address)
 	if err != nil {
@@ -32,7 +32,7 @@ func (kp *Kiddylineprocessor) runGRPC(ctx context.Context, wg *sync.WaitGroup, s
 	}
 	grpcServer := grpc.NewServer()
 	g := &gRPCServer{
-		store: store,
+		store: data,
 		loger: loger,
 	}
 	api.RegisterProcessorServer(grpcServer, g)
@@ -116,21 +116,21 @@ func (s *gRPCServer) subscribeOnSportLinesSender(ctx context.Context, sports []s
 }
 
 func (s *gRPCServer) getBaseball(c *api.Coefficients) {
-	dbc, err := (*s.store).BaseballRepository().GetCoefficient()
+	dbc, err := s.store.BaseballRepository().GetCoefficient()
 	if err != nil {
 		s.loger.Error("kiddylineprocessor : gRPC API : getBaseball : BaseballRepository.GetCoefficient : " + err.Error())
 	}
 	c.Coefficients["baseball"] = dbc
 }
 func (s *gRPCServer) getFootball(c *api.Coefficients) {
-	dbc, err := (*s.store).FootballRepository().GetCoefficient()
+	dbc, err := s.store.FootballRepository().GetCoefficient()
 	if err != nil {
 		s.loger.Error("kiddylineprocessor : gRPC API : getFootball : FootballRepository.GetCoefficient : " + err.Error())
 	}
 	c.Coefficients["football"] = dbc
 }
 func (s *gRPCServer) getSoccer(c *api.Coefficients) {
-	dbc, err := (*s.store).SoccerRepository().GetCoefficient()
+	dbc, err := s.store.SoccerRepository().GetCoefficient()
 	if err != nil {
 		s.loger.Error("kiddylineprocessor : gRPC API : getSoccer : SoccerRepository.GetCoefficient : " + err.Error())
 	}

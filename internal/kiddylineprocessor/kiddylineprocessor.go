@@ -75,7 +75,7 @@ func (kp *Kiddylineprocessor) Start() {
 	go kp.updateFromProvider(ctx, &wg, "football", kp.config.LinesProvider.SyncIntervalFootball, kp.store.FootballRepository().UpdateCoefficient)
 	go kp.updateFromProvider(ctx, &wg, "soccer", kp.config.LinesProvider.SyncIntervalSoccer, kp.store.SoccerRepository().UpdateCoefficient)
 	go kp.httpAPIServer(ctx, &wg)
-	go kp.runGRPC(ctx, &wg, &kp.store, kp.loger)
+	go kp.runGRPC(ctx, &wg, kp.store, kp.loger)
 
 	sigCh := make(chan os.Signal, 10)
 	signal.Notify(sigCh, os.Interrupt)
