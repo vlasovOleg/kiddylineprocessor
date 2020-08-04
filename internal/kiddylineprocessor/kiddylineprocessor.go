@@ -17,13 +17,14 @@ import (
 
 // Kiddylineprocessor main struct
 type Kiddylineprocessor struct {
-	config        *Config
-	store         store.Store
-	httpClient    *http.Client
-	loger         *logrus.Logger
-	errorBaseball string
-	errorFootball string
-	errorSoccer   string
+	config     *Config
+	store      store.Store
+	httpClient *http.Client
+	loger      *logrus.Logger
+	errors     struct {
+		data map[interface{}]interface{}
+		sync.Mutex
+	}
 }
 
 // New kiddylineprocessor
@@ -32,6 +33,8 @@ func New(config *Config) *Kiddylineprocessor {
 	kp := &Kiddylineprocessor{}
 	kp.config = config
 	kp.config.LinesProvider.Address += "/api/v1/lines/"
+
+	kp.errors.data = make(map[interface{}]interface{})
 
 	loger := logrus.New()
 	loger.SetFormatter(
@@ -56,10 +59,6 @@ func New(config *Config) *Kiddylineprocessor {
 	kp.httpClient = &http.Client{
 		Timeout: config.LinesProvider.RequestsTimeout,
 	}
-
-	kp.errorBaseball = "waiting sync"
-	kp.errorFootball = "waiting sync"
-	kp.errorSoccer = "waiting sync"
 	return kp
 }
 
@@ -68,12 +67,13 @@ func New(config *Config) *Kiddylineprocessor {
 func (kp *Kiddylineprocessor) Start() {
 	kp.loger.Debug("Kiddylineprocessor : Start")
 
-	_, stop := context.WithCancel(context.Background())
+	ctx, stop := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
+	wg.Add(3)
 
-	go kp.updaterByLineProviderBaseball()
-	go kp.updaterByLineProviderFootball()
-	go kp.updaterByLineProviderSoccer()
+	go kp.updateFromProvider(ctx, &wg, "baseball", kp.config.LinesProvider.SyncIntervalBaseball, kp.store.BaseballRepository().UpdateCoefficient)
+	go kp.updateFromProvider(ctx, &wg, "football", kp.config.LinesProvider.SyncIntervalFootball, kp.store.FootballRepository().UpdateCoefficient)
+	go kp.updateFromProvider(ctx, &wg, "soccer", kp.config.LinesProvider.SyncIntervalSoccer, kp.store.SoccerRepository().UpdateCoefficient)
 
 	go kp.httpAPIServer()
 	go kp.NewGRPC(&kp.store, kp.loger)

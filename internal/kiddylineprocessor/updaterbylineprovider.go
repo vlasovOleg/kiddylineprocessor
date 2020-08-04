@@ -1,18 +1,19 @@
 package kiddylineprocessor
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 )
 
-func (kp *Kiddylineprocessor) updaterByLineProvider(sport string) (float32, error) {
+func (kp *Kiddylineprocessor) requestLine(sport string) (float32, error) {
 	response := struct {
 		Lines struct {
-			// Coefficient string `json:"BASEBALL,FOOTBALL,SOCCER"`
 			CoefficientBASEBALL string `json:"BASEBALL"`
 			CoefficientFOOTBALL string `json:"FOOTBALL"`
 			CoefficientSOCCER   string `json:"SOCCER"`
@@ -50,65 +51,45 @@ func (kp *Kiddylineprocessor) updaterByLineProvider(sport string) (float32, erro
 		c, err := strconv.ParseFloat(response.Lines.CoefficientSOCCER, 32)
 		return float32(c), err
 	}
-	return 0, nil
+	return 0, errors.New("wrong data")
 }
 
-func (kp *Kiddylineprocessor) updaterByLineProviderBaseball() {
-	for {
-		time.Sleep(kp.config.LinesProvider.SyncIntervalBaseball)
-		c, err := kp.updaterByLineProvider("baseball")
-		if err != nil {
-			kp.errorBaseball = err.Error()
-			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : updaterByProvider : ", err.Error())
-			continue
-		}
-		err = kp.store.BaseballRepository().UpdateCoefficient(c)
-		if err != nil {
-			kp.errorBaseball = err.Error()
-			kp.loger.Error("Kiddylineprocessor : updaterByProviderBaseball : UpdateCoefficient : ", err.Error())
-			continue
-		}
-		kp.loger.Trace("Kiddylineprocessor : updaterByProviderBaseball : new coefficient : ", c)
-		kp.errorBaseball = ""
+func (kp *Kiddylineprocessor) updateFromProvider(ctx context.Context, wg *sync.WaitGroup, sportName string, syncInterval time.Duration, storeFunc func(float32) error) {
+	errHandler := func(msg string, err error) {
+		kp.errors.Mutex.Lock()
+		kp.errors.data[sportName] = err.Error()
+		kp.errors.Mutex.Unlock()
+		kp.loger.Error("Kiddylineprocessor : updateFromProvider : ", sportName, " : ", msg, " : ", err.Error())
 	}
-}
 
-func (kp *Kiddylineprocessor) updaterByLineProviderFootball() {
-	for {
-		time.Sleep(kp.config.LinesProvider.SyncIntervalFootball)
-		c, err := kp.updaterByLineProvider("football")
+	update := func() {
+		c, err := kp.requestLine(sportName)
 		if err != nil {
-			kp.errorFootball = err.Error()
-			kp.loger.Error("Kiddylineprocessor : updaterByProviderFootball : updaterByProvider : ", err.Error())
-			continue
+			errHandler("requestLine", err)
+			return
 		}
-		err = kp.store.FootballRepository().UpdateCoefficient(c)
+		err = storeFunc(c)
 		if err != nil {
-			kp.errorFootball = err.Error()
-			kp.loger.Error("Kiddylineprocessor : updaterByProviderFootball : UpdateCoefficient : ", err.Error())
-			continue
+			errHandler("storeFunc", err)
+			return
 		}
-		kp.errorFootball = ""
-		kp.loger.Trace("Kiddylineprocessor : updaterByProviderFootball : new coefficient : ", c)
+		if _, ok := kp.errors.data[sportName]; ok {
+			kp.errors.Mutex.Lock()
+			delete(kp.errors.data, sportName)
+			kp.errors.Mutex.Unlock()
+		}
+		kp.loger.Debug("Kiddylineprocessor : updateFromProvider : ", sportName, " : new coefficient : ", c)
 	}
-}
 
-func (kp *Kiddylineprocessor) updaterByLineProviderSoccer() {
 	for {
-		time.Sleep(kp.config.LinesProvider.SyncIntervalSoccer)
-		c, err := kp.updaterByLineProvider("soccer")
-		if err != nil {
-			kp.errorSoccer = err.Error()
-			kp.loger.Error("Kiddylineprocessor : updaterByProviderSoccer : updaterByProvider : ", err.Error())
-			continue
+		time.Sleep(syncInterval)
+		select {
+		case <-ctx.Done():
+			kp.loger.Info("Kiddylineprocessor : updateFromProvider : ", sportName, " : stopped")
+			wg.Done()
+			return
+		default:
+			update()
 		}
-		err = kp.store.SoccerRepository().UpdateCoefficient(c)
-		if err != nil {
-			kp.errorSoccer = err.Error()
-			kp.loger.Error("Kiddylineprocessor : updaterByProviderSoccer : UpdateCoefficient : ", err.Error())
-			continue
-		}
-		kp.errorSoccer = ""
-		kp.loger.Debug("Kiddylineprocessor : updaterByProviderSoccer : new coefficient : ", c)
 	}
 }
