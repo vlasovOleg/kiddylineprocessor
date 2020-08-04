@@ -6,8 +6,10 @@
 package kiddylineprocessor
 
 import (
+	"context"
 	"math"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -22,9 +24,8 @@ type gRPCServer struct {
 	loger *logrus.Logger
 }
 
-// NewGRPC ..
-func (kp *Kiddylineprocessor) NewGRPC(store *store.Store, loger *logrus.Logger) {
-	kp.loger.Trace("Kiddylineprocessor : NewGRPC...")
+func (kp *Kiddylineprocessor) runGRPC(ctx context.Context, wg *sync.WaitGroup, store *store.Store, loger *logrus.Logger) {
+	kp.loger.Trace("Kiddylineprocessor : runGRPC")
 	lis, err := net.Listen("tcp", kp.config.GRPC.Address)
 	if err != nil {
 		kp.loger.Panic("Kiddylineprocessor : gRPC : failed to listen : ", err)
@@ -36,73 +37,81 @@ func (kp *Kiddylineprocessor) NewGRPC(store *store.Store, loger *logrus.Logger) 
 	}
 	api.RegisterProcessorServer(grpcServer, g)
 
-	err = grpcServer.Serve(lis)
-	if err != nil {
-		kp.loger.Error("Kiddylineprocessor : NewGRPC : grpcServer.Serve : ", err)
-	}
+	go func() {
+		err = grpcServer.Serve(lis)
+		if err != nil {
+			kp.loger.Error("Kiddylineprocessor : runGRPC : grpcServer.Serve : ", err)
+		}
+	}()
+
+	<-ctx.Done()
+	grpcServer.Stop()
+	kp.loger.Info("Kiddylineprocessor : gRPC : Server closed")
+	wg.Done()
 }
 
 // SubscribeOnSportLines grpc method
 func (s *gRPCServer) SubscribeOnSportLines(stream api.Processor_SubscribeOnSportLinesServer) error {
-	sportNames := []func(*api.Coefficients){}
-	duration := int32(0)
-	delta := false
-
-	go s.subscribeOnSportLinesSender(stream, &sportNames, &duration, &delta)
-
+	ctx, stop := context.WithCancel(context.Background())
 	for {
 		data, err := stream.Recv()
 		if err != nil {
+			stop()
+			s.loger.Error("gRPCServer : SubscribeOnSportLines : stream.Recv : ", err)
 			return err
 		}
+		stop()
+		ctx, stop = context.WithCancel(context.Background())
 		s.loger.Debug("SubscribeOnSportLines : gRPC SubscribeOnSportLines : sports:", data.Sports, "time:", data.Time)
-		sportNames = []func(*api.Coefficients){}
-		for _, sports := range data.Sports {
-			if sports == "baseball" {
-				sportNames = append(sportNames, s.getBaseball)
-			}
-			if sports == "football" {
-				sportNames = append(sportNames, s.getFootball)
-			}
-			if sports == "soccer" {
-				sportNames = append(sportNames, s.getSoccer)
-			}
-		}
-		delta = false
-		duration = data.Time
+		go s.subscribeOnSportLinesSender(ctx, data.Sports, stream, data.Time)
 	}
 }
 
-// grpc stream for send - func`s for getting info - time for delay - send delta
-func (s *gRPCServer) subscribeOnSportLinesSender(stream api.Processor_SubscribeOnSportLinesServer, sports *[]func(*api.Coefficients), t *int32, delta *bool) {
+func (s *gRPCServer) subscribeOnSportLinesSender(ctx context.Context, sports []string, stream api.Processor_SubscribeOnSportLinesServer, t int32) {
+	sportsFunc := []func(*api.Coefficients){}
 	firstCoefficients := make(map[string]float32)
 
+	for _, sport := range sports {
+		if sport == "baseball" {
+			sportsFunc = append(sportsFunc, s.getBaseball)
+			s.getBaseball(&api.Coefficients{Coefficients: firstCoefficients})
+		}
+		if sport == "football" {
+			sportsFunc = append(sportsFunc, s.getFootball)
+			s.getFootball(&api.Coefficients{Coefficients: firstCoefficients})
+		}
+		if sport == "soccer" {
+			sportsFunc = append(sportsFunc, s.getSoccer)
+			s.getSoccer(&api.Coefficients{Coefficients: firstCoefficients})
+		}
+	}
+
+	err := stream.Send(&api.Coefficients{Coefficients: firstCoefficients})
+	if err != nil {
+		s.loger.Error("GRPCServer : subscribeOnSportLinesSender : stream.Send : ", err)
+	}
+
 	for {
-		coefficients := api.Coefficients{}
-		coefficients.Coefficients = make(map[string]float32)
-		if len(*sports) == 0 {
-			continue
-		}
-		for i := 0; i < len(*sports); i++ {
-			(*sports)[i](&coefficients)
-		}
-		if *delta {
+		time.Sleep(time.Second * time.Duration(t))
+		select {
+		case <-ctx.Done():
+			s.loger.Trace("exit from loop")
+			return
+		default:
+			coefficients := api.Coefficients{}
+			coefficients.Coefficients = make(map[string]float32)
+			for i := 0; i < len(sportsFunc); i++ {
+				(sportsFunc)[i](&coefficients)
+			}
 			for s, c := range firstCoefficients {
 				coefficients.Coefficients[s] -= c
 				coefficients.Coefficients[s] = float32(math.Ceil(float64(coefficients.Coefficients[s])*1000) / 1000)
 			}
-		} else {
-			firstCoefficients = make(map[string]float32)
-			for s, c := range coefficients.Coefficients {
-				firstCoefficients[s] = c
+			err := stream.Send(&coefficients)
+			if err != nil {
+				s.loger.Error("GRPCServer : subscribeOnSportLinesSender : stream.Send : ", err)
 			}
-			*delta = true
 		}
-		err := stream.Send(&coefficients)
-		if err != nil {
-			s.loger.Error("GRPCServer : subscribeOnSportLinesSender : stream.Send : ", err)
-		}
-		time.Sleep(time.Second * time.Duration(*t))
 	}
 }
 
@@ -113,7 +122,6 @@ func (s *gRPCServer) getBaseball(c *api.Coefficients) {
 	}
 	c.Coefficients["baseball"] = dbc
 }
-
 func (s *gRPCServer) getFootball(c *api.Coefficients) {
 	dbc, err := (*s.store).FootballRepository().GetCoefficient()
 	if err != nil {
@@ -121,7 +129,6 @@ func (s *gRPCServer) getFootball(c *api.Coefficients) {
 	}
 	c.Coefficients["football"] = dbc
 }
-
 func (s *gRPCServer) getSoccer(c *api.Coefficients) {
 	dbc, err := (*s.store).SoccerRepository().GetCoefficient()
 	if err != nil {
