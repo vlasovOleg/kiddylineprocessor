@@ -1,10 +1,14 @@
 package kiddylineprocessor
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"github.com/vlasovoleg/kiddyLineProcessor/internal/store"
@@ -64,10 +68,24 @@ func New(config *Config) *Kiddylineprocessor {
 func (kp *Kiddylineprocessor) Start() {
 	kp.loger.Debug("Kiddylineprocessor : Start")
 
+	_, stop := context.WithCancel(context.Background())
+	var wg sync.WaitGroup
+
 	go kp.updaterByLineProviderBaseball()
 	go kp.updaterByLineProviderFootball()
 	go kp.updaterByLineProviderSoccer()
 
 	go kp.httpAPIServer()
-	kp.NewGRPC(&kp.store, kp.loger)
+	go kp.NewGRPC(&kp.store, kp.loger)
+
+	sigCh := make(chan os.Signal, 10)
+	signal.Notify(sigCh, os.Interrupt)
+	for {
+		if <-sigCh == os.Interrupt {
+			stop()
+			wg.Wait()
+			return
+		}
+		continue
+	}
 }
