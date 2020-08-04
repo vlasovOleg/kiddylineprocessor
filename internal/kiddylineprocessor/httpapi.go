@@ -1,12 +1,14 @@
 package kiddylineprocessor
 
 import (
+	"context"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
 
-func (kp *Kiddylineprocessor) httpAPIServer() {
+func (kp *Kiddylineprocessor) httpAPIServer(ctx context.Context, wg *sync.WaitGroup) {
 	router := mux.NewRouter()
 	router.HandleFunc("/ready", kp.httpHandler()).Methods("GET")
 	server := http.Server{
@@ -16,10 +18,16 @@ func (kp *Kiddylineprocessor) httpAPIServer() {
 		WriteTimeout: kp.config.HTTPAPI.WriteTimeout,
 	}
 
-	err := server.ListenAndServe()
-	if err != nil {
-		kp.loger.Panic("httpAPIServer : ListenAndServe : ", err)
-	}
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			kp.loger.Info("httpAPIServer : ListenAndServe : ", err)
+		}
+	}()
+
+	<-ctx.Done()
+	server.Shutdown(context.TODO())
+	wg.Done()
 }
 
 func (kp *Kiddylineprocessor) httpHandler() http.HandlerFunc {

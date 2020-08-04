@@ -69,19 +69,19 @@ func (kp *Kiddylineprocessor) Start() {
 
 	ctx, stop := context.WithCancel(context.Background())
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 
 	go kp.updateFromProvider(ctx, &wg, "baseball", kp.config.LinesProvider.SyncIntervalBaseball, kp.store.BaseballRepository().UpdateCoefficient)
 	go kp.updateFromProvider(ctx, &wg, "football", kp.config.LinesProvider.SyncIntervalFootball, kp.store.FootballRepository().UpdateCoefficient)
 	go kp.updateFromProvider(ctx, &wg, "soccer", kp.config.LinesProvider.SyncIntervalSoccer, kp.store.SoccerRepository().UpdateCoefficient)
-
-	go kp.httpAPIServer()
+	go kp.httpAPIServer(ctx, &wg)
 	go kp.NewGRPC(&kp.store, kp.loger)
 
 	sigCh := make(chan os.Signal, 10)
 	signal.Notify(sigCh, os.Interrupt)
 	for {
 		if <-sigCh == os.Interrupt {
+			kp.loger.Info("Stopping the server")
 			stop()
 			wg.Wait()
 			return
